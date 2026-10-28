@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+set -u
+
+GRIB_DIR="$HOME/gribland"
+STORE="$HOME/gribland-wayland-linux/gribland-bootstrap"
+JAVA_PKG="jdk21-openjdk"
+JAVA_BIN="/usr/lib/jvm/java-21-openjdk/bin/java"
+ICON_URL="https://s3.gribland.net/uploads/icons/og_image.png"
+ICON_DIR="$HOME/.local/share/icons"
+ICON_PATH="$ICON_DIR/gribland.png"
+
+mkdir -p "$STORE" "$ICON_DIR"
+
+if [[ ! -s "$ICON_PATH" ]]; then
+    echo "[gribland] Скачиваю иконку"
+    if curl -fsSL --max-time 30 -o "$ICON_PATH.tmp" "$ICON_URL"; then
+        mv -f "$ICON_PATH.tmp" "$ICON_PATH"
+    else
+        rm -f "$ICON_PATH.tmp"
+        echo "[gribland] Не удалось скачать иконку"
+    fi
+fi
+
+NEW=$(find "$HOME/Downloads" -maxdepth 1 -type f -name 'gribland-bootstrap-*.jar' 2>/dev/null | sort -V | tail -n1)
+if [[ -n "$NEW" ]]; then
+    echo "[gribland] Переношу $(basename "$NEW") в $STORE"
+    rm -f "$STORE"/gribland-bootstrap-*.jar
+    if ! mv -f "$NEW" "$STORE/"; then
+        echo "[gribland] Не удалось переместить jar"
+        exit 1
+    fi
+    rm -f "$HOME"/Downloads/gribland-bootstrap-*.jar
+fi
+
+JAR=$(find "$STORE" -maxdepth 1 -type f -name 'gribland-bootstrap-*.jar' 2>/dev/null | sort -V | tail -n1)
+if [[ -z "$JAR" ]]; then
+    echo "[gribland] Bootstrap не найден. Скачай его с https://gribland.net/ в ~/Downloads"
+    exit 1
+fi
+echo "[gribland] Использую: $JAR"
+
+if [[ ! -x "$JAVA_BIN" ]]; then
+    read -r -p "[gribland] $JAVA_PKG не установлен. Установить? [Y/n] " ANSWER
+    ANSWER="${ANSWER:-Y}"
+    case "$ANSWER" in
+        [Yy]|[Yy][Ee][Ss]|[Дд]|[Дд][Аа])
+            sudo pacman -S --needed --noconfirm "$JAVA_PKG" || { echo "[gribland] Не удалось установить $JAVA_PKG"; exit 1; }
+            ;;
+        *)
+            echo "[gribland] Без $JAVA_PKG запуск невозможен"
+            exit 1
+            ;;
+    esac
+fi
+
+if [[ -z "${DISPLAY:-}" ]]; then
+    echo "[gribland] DISPLAY пуст: XWayland не запущен (пакет xorg-xwayland)"
+    exit 1
+fi
+
+fix_perms() {
+    [[ -d "$GRIB_DIR/bin/runtime" ]] || return 0
+    find "$GRIB_DIR/bin/runtime" -type f \
+        \( -path '*/bin/*' -o -name jspawnhelper -o -name jexec \) \
+        ! -perm -u+x -exec chmod +x {} + 2>/dev/null
+}
+fix_perms
+
+( while kill -0 $$ 2>/dev/null; do fix_perms; sleep 2; done ) &
+WATCHER=$!
+trap 'kill $WATCHER 2>/dev/null' EXIT INT TERM
+
+export GDK_BACKEND=x11
+"$JAVA_BIN" -jar "$JAR" "$@"
