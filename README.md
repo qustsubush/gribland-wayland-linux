@@ -34,7 +34,7 @@
 При первом запуске скрипт:
 
 1. скачает иконку в `~/.local/share/icons/gribland.png`;
-2. перенесёт jar из `~/Downloads` в `~/.local/share/gribland-bootstrap/`;
+2. перенесёт jar из `~/Downloads` в `~/gribland-wayland-linux/gribland-bootstrap/`;
 3. спросит, ставить ли `jdk21-openjdk`, если его нет (Enter = да, `n` = отмена);
 4. запустит bootstrap, а он сам скачает лаунчер и JRE в `~/gribland`.
 
@@ -86,7 +86,7 @@ update-desktop-database ~/.local/share/applications 2>/dev/null
 ## Решение проблем
 
 **Скрипт пишет «Bootstrap не найден».**
-В `~/Downloads` и в `~/.local/share/gribland-bootstrap/` нет файла `gribland-bootstrap-*.jar`. Скрипт ищет только по этой маске. Если файл называется иначе, переименуй его.
+В `~/Downloads` и в `~/gribland-wayland-linux/gribland-bootstrap/` нет файла `gribland-bootstrap-*.jar`. Скрипт ищет только по этой маске. Если файл называется иначе, переименуй его.
 
 **`DISPLAY пуст: XWayland не запущен`.**
 Установи `xorg-xwayland` и убедись, что композитор его запускает. Проверка: `echo $DISPLAY`.
