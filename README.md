@@ -51,7 +51,7 @@ cat > ~/.local/share/applications/gribland.desktop <<EOF
 Type=Application
 Name=Gribland
 Comment=Gribland launcher
-Exec=$HOME/.local/bin/gribland
+Exec=$HOME/gribland-wayland-linux/gribland
 Icon=$HOME/.local/share/icons/gribland.png
 Terminal=false
 Categories=Game;
